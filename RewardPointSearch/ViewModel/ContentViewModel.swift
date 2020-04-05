@@ -10,6 +10,11 @@ import Foundation
 import Combine
 
 final class ContentViewModel: ObservableObject {
+    enum ViewModelError: Error {
+        case fullName
+        case empty
+    }
+    
     enum Constant {
         static let placeholder = "Full Name"
         static let fetching = "Loading"
@@ -50,33 +55,49 @@ final class ContentViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .print()
             .sink {
-                if $0.split(separator: Constant.space).count == 2 {
-                    self.dispasableTimer = Timer.publish(every: 0.25, on: .main, in: .default)
-                        .autoconnect()
-                        .map { (date: Date) -> String in
-                            switch dots {
-                            case .customContents(var content):
-                                if content.count == 3 {
-                                    content = []
-                                    dots = .customContents(content)
-                                } else {
-                                    content.append(Constant.dot)
-                                    dots = .customContents(content)
+                self.userNameValidation($0).sink(receiveCompletion: { completion in
+                    switch completion {
+                    case .finished:
+                        self.dispasableTimer = Timer.publish(every: 0.25, on: .main, in: .default)
+                            .autoconnect()
+                            .map { (date: Date) -> String in
+                                switch dots {
+                                case .customContents(var content):
+                                    if content.count == 3 {
+                                        content = []
+                                        dots = .customContents(content)
+                                    } else {
+                                        content.append(Constant.dot)
+                                        dots = .customContents(content)
+                                    }
+                                    return content.reduce(Constant.fetching) { (result, current) -> String in
+                                        result + current
+                                    }
                                 }
-                                return content.reduce(Constant.fetching) { (result, current) -> String in
-                                    result + current
-                                }
-                            }
+                        }
+                        .assign(to: \.display, on: self)
+                        self.fetchUserInfo()
+                    case .failure(.empty):
+                        self.display = Constant.empty
+                    case .failure(.fullName):
+                        self.display = Constant.enterFullName
                     }
-                    .assign(to: \.display, on: self)
-                    self.fetchUserInfo()
-                } else if $0.count > 0 {
-                    self.display = Constant.enterFullName
-                } else {
-                    self.display = Constant.empty
-                }
+                }) { _ in }
+                    .store(in: &self.disposables)
         }
         .store(in: &disposables)
+    }
+    
+    private func userNameValidation(_ username: String) -> AnyPublisher<Void, ViewModelError> {
+            let publisher = PassthroughSubject<Void, ViewModelError>()
+            if username.split(separator: Constant.space).count == 2 {
+                publisher.send(completion: .finished)
+            } else if username.count > 0 {
+                publisher.send(completion: .failure(.fullName))
+            } else {
+                publisher.send(completion: .failure(.empty))
+            }
+        return publisher.eraseToAnyPublisher()
     }
     
     /// Get user info from service.
