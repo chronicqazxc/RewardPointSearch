@@ -15,6 +15,11 @@
 		B043D12C2439B450007322BA /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B043D12A2439B450007322BA /* LaunchScreen.storyboard */; };
 		B043D1372439B450007322BA /* RewardPointSearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B043D1362439B450007322BA /* RewardPointSearchTests.swift */; };
 		B043D1422439B450007322BA /* RewardPointSearchUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B043D1412439B450007322BA /* RewardPointSearchUITests.swift */; };
+		B043D1512439B4F8007322BA /* ContentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B043D1502439B4F8007322BA /* ContentViewModel.swift */; };
+		B043D1542439B51C007322BA /* UserInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = B043D1532439B51C007322BA /* UserInfo.swift */; };
+		B043D1572439B534007322BA /* Service.swift in Sources */ = {isa = PBXBuildFile; fileRef = B043D1562439B534007322BA /* Service.swift */; };
+		B043D1592439B542007322BA /* MockService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B043D1582439B542007322BA /* MockService.swift */; };
+		B043D15C2439B5A7007322BA /* MockUnitTestService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B043D15B2439B5A7007322BA /* MockUnitTestService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,6 +54,11 @@
 		B043D13D2439B450007322BA /* RewardPointSearchUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RewardPointSearchUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B043D1412439B450007322BA /* RewardPointSearchUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RewardPointSearchUITests.swift; sourceTree = "<group>"; };
 		B043D1432439B450007322BA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B043D1502439B4F8007322BA /* ContentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentViewModel.swift; sourceTree = "<group>"; };
+		B043D1532439B51C007322BA /* UserInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserInfo.swift; sourceTree = "<group>"; };
+		B043D1562439B534007322BA /* Service.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Service.swift; sourceTree = "<group>"; };
+		B043D1582439B542007322BA /* MockService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockService.swift; sourceTree = "<group>"; };
+		B043D15B2439B5A7007322BA /* MockUnitTestService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockUnitTestService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -101,7 +111,10 @@
 			children = (
 				B043D11F2439B44C007322BA /* AppDelegate.swift */,
 				B043D1212439B44C007322BA /* SceneDelegate.swift */,
-				B043D1232439B44C007322BA /* ContentView.swift */,
+				B043D15A2439B54A007322BA /* Service */,
+				B043D1552439B527007322BA /* Model */,
+				B043D14F2439B4DD007322BA /* View */,
+				B043D1522439B505007322BA /* ViewModel */,
 				B043D1252439B450007322BA /* Assets.xcassets */,
 				B043D12A2439B450007322BA /* LaunchScreen.storyboard */,
 				B043D12D2439B450007322BA /* Info.plist */,
@@ -122,6 +135,7 @@
 			isa = PBXGroup;
 			children = (
 				B043D1362439B450007322BA /* RewardPointSearchTests.swift */,
+				B043D15B2439B5A7007322BA /* MockUnitTestService.swift */,
 				B043D1382439B450007322BA /* Info.plist */,
 			);
 			path = RewardPointSearchTests;
@@ -134,6 +148,39 @@
 				B043D1432439B450007322BA /* Info.plist */,
 			);
 			path = RewardPointSearchUITests;
+			sourceTree = "<group>";
+		};
+		B043D14F2439B4DD007322BA /* View */ = {
+			isa = PBXGroup;
+			children = (
+				B043D1232439B44C007322BA /* ContentView.swift */,
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
+		B043D1522439B505007322BA /* ViewModel */ = {
+			isa = PBXGroup;
+			children = (
+				B043D1502439B4F8007322BA /* ContentViewModel.swift */,
+			);
+			path = ViewModel;
+			sourceTree = "<group>";
+		};
+		B043D1552439B527007322BA /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				B043D1532439B51C007322BA /* UserInfo.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		B043D15A2439B54A007322BA /* Service */ = {
+			isa = PBXGroup;
+			children = (
+				B043D1562439B534007322BA /* Service.swift */,
+				B043D1582439B542007322BA /* MockService.swift */,
+			);
+			path = Service;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -267,9 +314,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B043D1512439B4F8007322BA /* ContentViewModel.swift in Sources */,
 				B043D1202439B44C007322BA /* AppDelegate.swift in Sources */,
+				B043D1592439B542007322BA /* MockService.swift in Sources */,
 				B043D1222439B44C007322BA /* SceneDelegate.swift in Sources */,
+				B043D1542439B51C007322BA /* UserInfo.swift in Sources */,
 				B043D1242439B44C007322BA /* ContentView.swift in Sources */,
+				B043D1572439B534007322BA /* Service.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -278,6 +329,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B043D1372439B450007322BA /* RewardPointSearchTests.swift in Sources */,
+				B043D15C2439B5A7007322BA /* MockUnitTestService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
