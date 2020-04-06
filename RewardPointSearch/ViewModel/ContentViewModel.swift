@@ -107,39 +107,40 @@ final class ContentViewModel: ObservableObject {
     private func displayAfterValidate(username: String) -> AnyPublisher<String, Never> {
         var dots = Constant.customContents([])
         return Deferred { () -> AnyPublisher<String, Never> in
-            let publisher = self.userNameValidation(username)
             var anyPublisher: AnyPublisher<String, Never>!
-            _ = publisher.sink(receiveCompletion: { completion in
-                switch completion {
-                case .finished:
-                    anyPublisher = Timer.publish(every: 0.25, on: .main, in: .default)
-                        .autoconnect()
-                        .map { (date: Date) -> String in
-                            switch dots {
-                            case .customContents(var content):
-                                if content.count == 3 {
-                                    content = []
-                                    dots = .customContents(content)
-                                } else {
-                                    content.append(Constant.dot)
-                                    dots = .customContents(content)
+            self.userNameValidation(username)
+                .sink(receiveCompletion: { completion in
+                    switch completion {
+                    case .finished:
+                        anyPublisher = Timer.publish(every: 0.25, on: .main, in: .default)
+                            .autoconnect()
+                            .map { (date: Date) -> String in
+                                switch dots {
+                                case .customContents(var content):
+                                    if content.count == 3 {
+                                        content = []
+                                        dots = .customContents(content)
+                                    } else {
+                                        content.append(Constant.dot)
+                                        dots = .customContents(content)
+                                    }
+                                    return content.reduce(Constant.fetching) { (result, current) -> String in
+                                        result + current
+                                    }
                                 }
-                                return content.reduce(Constant.fetching) { (result, current) -> String in
-                                    result + current
-                                }
-                            }
+                        }
+                        .eraseToAnyPublisher()
+                    case .failure(.empty):
+                        anyPublisher = Just(Constant.empty)
+                            .setFailureType(to: Never.self)
+                            .eraseToAnyPublisher()
+                    case .failure(.fullName):
+                        anyPublisher = Just(Constant.enterFullName)
+                            .setFailureType(to: Never.self)
+                            .eraseToAnyPublisher()
                     }
-                    .eraseToAnyPublisher()
-                case .failure(.empty):
-                    anyPublisher = Just(Constant.empty)
-                        .setFailureType(to: Never.self)
-                        .eraseToAnyPublisher()
-                case .failure(.fullName):
-                    anyPublisher = Just(Constant.enterFullName)
-                        .setFailureType(to: Never.self)
-                        .eraseToAnyPublisher()
-                }
-            }, receiveValue: { _ in })
+                }, receiveValue: { _ in })
+                .store(in: &self.disposables)
             return anyPublisher
         }
         .eraseToAnyPublisher()
