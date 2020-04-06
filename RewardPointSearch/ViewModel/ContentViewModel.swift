@@ -90,7 +90,7 @@ final class ContentViewModel: ObservableObject {
     }
     
     private func latestUserInfo() -> AnyPublisher<UserInfo, Never> {
-        service.getUserInfo(userName: username)
+        service.getUserInfo(username: username)
             .subscribe(on: DispatchQueue.global())
             .decode(type: UserInfo.self, decoder: JSONDecoder())
             .catch {_ in

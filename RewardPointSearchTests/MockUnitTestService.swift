@@ -12,11 +12,11 @@ import Combine
 
 class MockUnitTestService: Service {
     
-    func getUserInfo(userName: String) -> AnyPublisher<Data, ServiceError> {
-        print(userName)
+    func getUserInfo(username: String) -> AnyPublisher<Data, ServiceError> {
+        print(username)
         return Future<Data, ServiceError> { promise in
             DispatchQueue.global().asyncAfter(deadline: .now() + 1.5) {
-                if let data = self.mockUserInfo(userName: userName) {
+                if let data = self.mockUserInfo(userName: username) {
                     promise(.success(data))
                 } else {
                     promise(.failure(.notFound))

@@ -14,11 +14,11 @@ enum ServiceError: Error {
 }
 
 protocol Service {
-    func getUserInfo(userName: String) -> AnyPublisher<Data, ServiceError>
+    func getUserInfo(username: String) -> AnyPublisher<Data, ServiceError>
 }
 
 class UserInfoService: Service {
-    func getUserInfo(userName: String) -> AnyPublisher<Data, ServiceError> {
+    func getUserInfo(username: String) -> AnyPublisher<Data, ServiceError> {
         Fail<Data, ServiceError>(error: .notFound).eraseToAnyPublisher()
     }
 }
