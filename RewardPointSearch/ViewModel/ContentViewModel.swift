@@ -105,45 +105,49 @@ final class ContentViewModel: ObservableObject {
     }
     
     private func displayAfterValidate(username: String) -> AnyPublisher<String, Never> {
+        var anyPublisher: AnyPublisher<String, Never>!
+        self.userNameValidation(username)
+            .sink(receiveCompletion: { completion in
+                anyPublisher = self.displayPublisherBy(completion: completion)
+            }, receiveValue: { _ in })
+            .store(in: &self.disposables)
+        return anyPublisher
+    }
+    
+    private func displayPublisherBy(completion: Subscribers.Completion<ViewModelError>) -> AnyPublisher<String, Never> {
         var dots = Constant.customContents([])
-        return Deferred { () -> AnyPublisher<String, Never> in
-            var anyPublisher: AnyPublisher<String, Never>!
-            self.userNameValidation(username)
-                .sink(receiveCompletion: { completion in
-                    switch completion {
-                    case .finished:
-                        anyPublisher = Timer.publish(every: 0.25, on: .main, in: .default)
-                            .autoconnect()
-                            .map { (date: Date) -> String in
-                                switch dots {
-                                case .customContents(var content):
-                                    if content.count == 3 {
-                                        content = []
-                                        dots = .customContents(content)
-                                    } else {
-                                        content.append(Constant.dot)
-                                        dots = .customContents(content)
-                                    }
-                                    return content.reduce(Constant.fetching) { (result, current) -> String in
-                                        result + current
-                                    }
-                                }
+        var anyPublisher: AnyPublisher<String, Never>!
+        
+        switch completion {
+        case .finished:
+            anyPublisher = Timer.publish(every: 0.25, on: .main, in: .default)
+                .autoconnect()
+                .map { (date: Date) -> String in
+                    switch dots {
+                    case .customContents(var content):
+                        if content.count == 3 {
+                            content = []
+                            dots = .customContents(content)
+                        } else {
+                            content.append(Constant.dot)
+                            dots = .customContents(content)
                         }
-                        .eraseToAnyPublisher()
-                    case .failure(.empty):
-                        anyPublisher = Just(Constant.empty)
-                            .setFailureType(to: Never.self)
-                            .eraseToAnyPublisher()
-                    case .failure(.fullName):
-                        anyPublisher = Just(Constant.enterFullName)
-                            .setFailureType(to: Never.self)
-                            .eraseToAnyPublisher()
+                        return content.reduce(Constant.fetching) { (result, current) -> String in
+                            result + current
+                        }
                     }
-                }, receiveValue: { _ in })
-                .store(in: &self.disposables)
-            return anyPublisher
+            }
+            .eraseToAnyPublisher()
+        case .failure(.empty):
+            anyPublisher = Just(Constant.empty)
+            .setFailureType(to: Never.self)
+            .eraseToAnyPublisher()
+        case .failure(.fullName):
+            anyPublisher = Just(Constant.enterFullName)
+            .setFailureType(to: Never.self)
+            .eraseToAnyPublisher()
         }
-        .eraseToAnyPublisher()
+        return anyPublisher
     }
     
     private func userNameValidation(_ username: String) -> PassthroughSubject<String, ViewModelError> {
