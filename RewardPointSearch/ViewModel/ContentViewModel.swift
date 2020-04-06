@@ -53,7 +53,7 @@ final class ContentViewModel: ObservableObject {
                     .assign(to: \.display, on: self)
                 
                 // Username validation result.
-                self.userNameValidation(keyword)
+                self.validateUsername(keyword)
                     .sink(receiveCompletion: { (completion) in
                         switch completion {
                         case .finished:
@@ -106,15 +106,15 @@ final class ContentViewModel: ObservableObject {
     
     private func displayAfterValidate(username: String) -> AnyPublisher<String, Never> {
         var anyPublisher: AnyPublisher<String, Never>!
-        self.userNameValidation(username)
+        self.validateUsername(username)
             .sink(receiveCompletion: { completion in
-                anyPublisher = self.displayPublisherBy(completion: completion)
+                anyPublisher = self.displayFromUsernameValidateCompletion(completion)
             }, receiveValue: { _ in })
             .store(in: &self.disposables)
         return anyPublisher
     }
     
-    private func displayPublisherBy(completion: Subscribers.Completion<ViewModelError>) -> AnyPublisher<String, Never> {
+    private func displayFromUsernameValidateCompletion(_ completion: Subscribers.Completion<ViewModelError>) -> AnyPublisher<String, Never> {
         var dots = Constant.customContents([])
         var anyPublisher: AnyPublisher<String, Never>!
         
@@ -150,8 +150,8 @@ final class ContentViewModel: ObservableObject {
         return anyPublisher
     }
     
-    private func userNameValidation(_ username: String) -> PassthroughSubject<String, ViewModelError> {
-        let publisher = PassthroughSubject<String, ViewModelError>()
+    private func validateUsername(_ username: String) -> PassthroughSubject<Void, ViewModelError> {
+        let publisher = PassthroughSubject<Void, ViewModelError>()
         if username.split(separator: Constant.space).count == 2 {
             publisher.send(completion: .finished)
         } else if username.count > 0 {
