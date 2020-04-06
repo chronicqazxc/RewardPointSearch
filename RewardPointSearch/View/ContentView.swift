@@ -23,7 +23,7 @@ struct ContentView: View {
                         .bold()
                     Divider()
                         .fixedSize()
-                    TextField(viewModel.keywordPlaceholder, text: $viewModel.keyword)
+                    TextField(viewModel.usernamePlaceholder, text: $viewModel.username)
                 }
                 Spacer()
                 Text("\(viewModel.display)")

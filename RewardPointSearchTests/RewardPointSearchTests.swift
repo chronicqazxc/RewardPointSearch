@@ -33,7 +33,7 @@ class RewardPointSearchTests: XCTestCase {
             }
         }
         .store(in: &disposables)
-        viewModel.keyword = keyword
+        viewModel.username = keyword
         waitForExpectations(timeout: 5, handler: nil)
         XCTAssertEqual(viewModel.display, display)
     }
@@ -41,15 +41,15 @@ class RewardPointSearchTests: XCTestCase {
     func testViewModelDisplayMessage2() {
         let expectation = self.expectation(description: "Change keyword")
         let viewModel = ContentViewModel(service: mockService)
-        let keyword = "Wayne H"
-        let display = "User \(keyword) not found"
+        let username = "Wayne H"
+        let display = "User \(username) not found"
         viewModel.$display.sink {
             if $0 == display {
                 expectation.fulfill()
             }
         }
         .store(in: &disposables)
-        viewModel.keyword = keyword
+        viewModel.username = username
         waitForExpectations(timeout: 5, handler: nil)
         XCTAssertEqual(viewModel.display, display)
     }
@@ -68,7 +68,7 @@ class RewardPointSearchTests: XCTestCase {
             }
         }
         .store(in: &disposables)
-        viewModel.keyword = keyword
+        viewModel.username = keyword
         waitForExpectations(timeout: 5, handler: nil)
         XCTAssertEqual(viewModel.display, display)
     }
