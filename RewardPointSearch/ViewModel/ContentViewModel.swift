@@ -10,11 +10,6 @@ import Foundation
 import Combine
 
 final class ContentViewModel: ObservableObject {
-    enum ViewModelError: Error {
-        case fullName
-        case empty
-    }
-    
     enum Constant {
         static let placeholder = "Full Name"
         static let fetching = "Loading"
@@ -27,11 +22,10 @@ final class ContentViewModel: ObservableObject {
         static let dot = "."
         case customContents([String])
     }
-    
     private var service: Service
     @Published private var userInfo: UserInfo = UserInfo(firstName: "", lastName: "", rewardPoints: 0)
     private var disposables: Set<AnyCancellable> = Set()
-    private var dispasableTimer: AnyCancellable!
+    private var disposableTimer: AnyCancellable!
     /// Binding to View
     @Published var display = Constant.empty
     @Published var username = Constant.empty
@@ -39,126 +33,81 @@ final class ContentViewModel: ObservableObject {
     @Published var title = Constant.title
     @Published var subtitle = Constant.subtitle
     @Published var usernameLabelText = Constant.usernameLabelText
-    
+    let servicePublisher = PassthroughSubject<AnyPublisher<Data, ServiceError>, ServiceError>()
     init(service: Service = UserInfoService()) {
         self.service = service
-        // Start username validation and retrieve user info whenever username changes.
         $username
             .debounce(for: 0.5, scheduler: DispatchQueue.global())
-            .sink { keyword in
-                
-                // Update display based on the current username.
-                self.dispasableTimer = self.displayAfterValidate(username: keyword)
-                    .receive(on: DispatchQueue.main)
-                    .assign(to: \.display, on: self)
-                
-                // Username validation result.
-                self.validateUsername(keyword)
-                    .sink(receiveCompletion: { (completion) in
-                        switch completion {
-                        case .finished:
-                            // Retrieve user info if the username is valide.
-                            self.latestUserInfo()
-                                .receive(on: DispatchQueue.main)
-                                .assign(to: \.userInfo, on: self)
-                                .store(in: &self.disposables)
-                        case .failure(.empty), .failure(.fullName):
-                            break
-                        }
-                    }, receiveValue: { _ in })
-                    .store(in: &self.disposables)
-        }
-        .store(in: &disposables)
-        
-        // Update display whenever the user info chages.
-        $userInfo
-            .flatMap { (userInfo) -> AnyPublisher<String, Never> in
-                self.dispasableTimer?.cancel()
-                if userInfo.firstName == "", userInfo.lastName == "" {
-                    return Just("User \(self.username) not found")
-                        .setFailureType(to: Never.self)
+            .flatMap { (username) -> AnyPublisher<String, Never> in
+                if username.split(separator: Constant.space).count == 2 {
+                    return Just(username)
+                        .eraseToAnyPublisher()
+                } else if username.count > 0 {
+                    return Just(Constant.enterFullName)
                         .eraseToAnyPublisher()
                 } else {
-                    return Just("Hello \(userInfo.firstName) \(userInfo.lastName), \nyou have \(userInfo.rewardPoints) reward points.")
-                        .setFailureType(to: Never.self)
+                    return Just(Constant.empty)
                         .eraseToAnyPublisher()
                 }
         }
-        .receive(on: DispatchQueue.main)
-        .assign(to: \.display, on: self)
-        .store(in: &disposables)
+        .flatMap({ (message) -> AnyPublisher<String, Never> in
+            switch message {
+            case Constant.enterFullName, Constant.empty:
+                return Just(message).eraseToAnyPublisher()
+            default:
+                // Loading indicator
+                self.disposableTimer = self.loadingIdicator()
+                    .receive(on: DispatchQueue.main)
+                    .assign(to: \.display, on: self)
+                // Completion message publisher
+                let completionMessage = self.completionMessage()
+                self.servicePublisher.send(self.service.getUserInfo(username: message))
+                return completionMessage
+            }
+        })
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.display, on: self)
+            .store(in: &disposables)
     }
-    
-    private func latestUserInfo() -> AnyPublisher<UserInfo, Never> {
-        service.getUserInfo(username: username)
+    private func completionMessage() -> AnyPublisher<String, Never> {
+        return self.servicePublisher
+            .switchToLatest()
             .subscribe(on: DispatchQueue.global())
             .decode(type: UserInfo.self, decoder: JSONDecoder())
-            .catch {_ in
-                Just(UserInfo(firstName: "", lastName: "", rewardPoints: 0))
-                    .setFailureType(to: Never.self)
+            .catch { _ -> AnyPublisher<UserInfo, Never> in
+                let user = UserInfo(firstName: "", lastName: "", rewardPoints: 0)
+                return Just(user).eraseToAnyPublisher()
         }
-        .flatMap {
-            Just($0)
-                .setFailureType(to: Never.self)
+        .flatMap({ (userInfo) -> AnyPublisher<String, Never> in
+            self.disposableTimer.cancel()
+            if userInfo.firstName != "", userInfo.lastName != "" {
+                return Just("Hello \(userInfo.firstName) \(userInfo.lastName), \nyou have \(userInfo.rewardPoints) reward points.")
+                    .eraseToAnyPublisher()
+            } else {
+                return Just("Not Found").eraseToAnyPublisher()
+            }
+        })
+            .eraseToAnyPublisher()
+    }
+    private func loadingIdicator() -> AnyPublisher<String, Never> {
+        var dots = Constant.customContents([])
+        return Timer.publish(every: 0.25, on: .main, in: .default)
+            .autoconnect()
+            .map { (date: Date) -> String in
+                switch dots {
+                case .customContents(var content):
+                    if content.count == 3 {
+                        content = []
+                        dots = .customContents(content)
+                    } else {
+                        content.append(Constant.dot)
+                        dots = .customContents(content)
+                    }
+                    return content.reduce(Constant.fetching) { (result, current) -> String in
+                        result + current
+                    }
+                }
         }
         .eraseToAnyPublisher()
-    }
-    
-    private func displayAfterValidate(username: String) -> AnyPublisher<String, Never> {
-        var anyPublisher: AnyPublisher<String, Never>!
-        self.validateUsername(username)
-            .sink(receiveCompletion: { completion in
-                anyPublisher = self.displayFromUsernameValidateCompletion(completion)
-            }, receiveValue: { _ in })
-            .store(in: &self.disposables)
-        return anyPublisher
-    }
-    
-    private func displayFromUsernameValidateCompletion(_ completion: Subscribers.Completion<ViewModelError>) -> AnyPublisher<String, Never> {
-        var dots = Constant.customContents([])
-        var anyPublisher: AnyPublisher<String, Never>!
-        
-        switch completion {
-        case .finished:
-            anyPublisher = Timer.publish(every: 0.25, on: .main, in: .default)
-                .autoconnect()
-                .map { (date: Date) -> String in
-                    switch dots {
-                    case .customContents(var content):
-                        if content.count == 3 {
-                            content = []
-                            dots = .customContents(content)
-                        } else {
-                            content.append(Constant.dot)
-                            dots = .customContents(content)
-                        }
-                        return content.reduce(Constant.fetching) { (result, current) -> String in
-                            result + current
-                        }
-                    }
-            }
-            .eraseToAnyPublisher()
-        case .failure(.empty):
-            anyPublisher = Just(Constant.empty)
-            .setFailureType(to: Never.self)
-            .eraseToAnyPublisher()
-        case .failure(.fullName):
-            anyPublisher = Just(Constant.enterFullName)
-            .setFailureType(to: Never.self)
-            .eraseToAnyPublisher()
-        }
-        return anyPublisher
-    }
-    
-    private func validateUsername(_ username: String) -> PassthroughSubject<Void, ViewModelError> {
-        let publisher = PassthroughSubject<Void, ViewModelError>()
-        if username.split(separator: Constant.space).count == 2 {
-            publisher.send(completion: .finished)
-        } else if username.count > 0 {
-            publisher.send(completion: .failure(.fullName))
-        } else {
-            publisher.send(completion: .failure(.empty))
-        }
-        return publisher
     }
 }
