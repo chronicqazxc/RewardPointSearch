@@ -42,7 +42,7 @@ class RewardPointSearchTests: XCTestCase {
         let expectation = self.expectation(description: "Change keyword")
         let viewModel = ContentViewModel(service: mockService)
         let username = "Wayne H"
-        let display = "User \(username) not found"
+        let display = "Not found"
         viewModel.$display.sink {
             if $0 == display {
                 expectation.fulfill()

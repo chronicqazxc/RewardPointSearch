@@ -33,9 +33,16 @@ final class ContentViewModel: ObservableObject {
     @Published var title = Constant.title
     @Published var subtitle = Constant.subtitle
     @Published var usernameLabelText = Constant.usernameLabelText
-    let servicePublisher = PassthroughSubject<AnyPublisher<Data, ServiceError>, ServiceError>()
+    let servicePublisher = PassthroughSubject<UsernameHelper, ServiceError>()
     init(service: Service = UserInfoService()) {
         self.service = service
+        
+        self.completionMessage()
+            .print()
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.display, on: self)
+            .store(in: &disposables)
+        
         $username
             .debounce(for: 0.5, scheduler: DispatchQueue.global())
             .flatMap { (username) -> AnyPublisher<String, Never> in
@@ -50,27 +57,32 @@ final class ContentViewModel: ObservableObject {
                         .eraseToAnyPublisher()
                 }
         }
-        .flatMap({ (message) -> AnyPublisher<String, Never> in
+        .sink(receiveValue: { message in
             switch message {
-            case Constant.enterFullName, Constant.empty:
-                return Just(message).eraseToAnyPublisher()
+                case Constant.enterFullName, Constant.empty:
+                    Just(message).eraseToAnyPublisher()
+                        .receive(on: DispatchQueue.main)
+                        .assign(to: \.display, on: self)
+                        .store(in: &self.disposables)
             default:
                 // Loading indicator
                 self.disposableTimer = self.loadingIdicator()
                     .receive(on: DispatchQueue.main)
                     .assign(to: \.display, on: self)
-                // Completion message publisher
-                let completionMessage = self.completionMessage()
-                self.servicePublisher.send(self.service.getUserInfo(username: message))
-                return completionMessage
+                
+                let usernameHelper = UsernameHelper(request: .init(message), service: self.service)
+                self.servicePublisher.send(usernameHelper)
+                DispatchQueue.global().asyncAfter(deadline: .now() + 1) {
+                    usernameHelper.request.send(message)
+                }
             }
         })
-            .receive(on: DispatchQueue.main)
-            .assign(to: \.display, on: self)
-            .store(in: &disposables)
+            .store(in: &self.disposables)
     }
+        
     private func completionMessage() -> AnyPublisher<String, Never> {
         return self.servicePublisher
+            .map { $0.result }
             .switchToLatest()
             .subscribe(on: DispatchQueue.global())
             .decode(type: UserInfo.self, decoder: JSONDecoder())
@@ -84,7 +96,8 @@ final class ContentViewModel: ObservableObject {
                 return Just("Hello \(userInfo.firstName) \(userInfo.lastName), \nyou have \(userInfo.rewardPoints) reward points.")
                     .eraseToAnyPublisher()
             } else {
-                return Just("Not Found").eraseToAnyPublisher()
+                return Just("Not found")
+                    .eraseToAnyPublisher()
             }
         })
             .eraseToAnyPublisher()

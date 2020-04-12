@@ -10,12 +10,13 @@ import Foundation
 import Combine
 
 class MockService: Service {
-    private var disposables = Set<AnyCancellable>()
+    private var disposable: AnyCancellable!
     private let cache = NSCache<NSString, NSNumber>()
     func getUserInfo(username: String) -> AnyPublisher<Data, ServiceError> {
         Future<Data, ServiceError> { promise in
-            DispatchQueue.global().asyncAfter(deadline: .now() + 1.5) {
-                self.mockUserInfo(username: username)
+            let randomDelay = Int.random(in: 1...3)
+            DispatchQueue.global().asyncAfter(deadline: .now() + TimeInterval(randomDelay)) {
+                self.disposable = self.mockUserInfo(username: username)
                     .sink(receiveCompletion: { completion in
                         switch completion {
                         case .finished:
@@ -24,7 +25,7 @@ class MockService: Service {
                             promise(.failure(.notFound))
                         }
                     }) { userInfo in
-                        Publishers.Encode(upstream: Just(userInfo), encoder: JSONEncoder())
+                        self.disposable = Publishers.Encode(upstream: Just(userInfo), encoder: JSONEncoder())
                             .sink(receiveCompletion: { completion in
                                 switch completion {
                                 case .failure(_):
@@ -35,9 +36,7 @@ class MockService: Service {
                             }) { data in
                                 promise(.success(data))
                         }
-                        .store(in: &self.disposables)
                 }
-                .store(in: &self.disposables)
             }
         }
         .eraseToAnyPublisher()
