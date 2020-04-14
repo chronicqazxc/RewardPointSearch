@@ -34,13 +34,10 @@ final class ContentViewModel: ObservableObject {
     @Published var subtitle = Constant.subtitle
     @Published var usernameLabelText = Constant.usernameLabelText
     let servicePublisher = PassthroughSubject<UsernameHelper, ServiceError>()
+    
     init(service: Service = UserInfoService()) {
         self.service = service
-        self.completionMessage()
-            .print()
-            .receive(on: DispatchQueue.main)
-            .assign(to: \.display, on: self)
-            .store(in: &disposables)
+        
         $username
             .debounce(for: 0.5, scheduler: DispatchQueue.global())
             .flatMap { (username) -> AnyPublisher<String, Never> in
@@ -75,9 +72,8 @@ final class ContentViewModel: ObservableObject {
             }
         })
             .store(in: &self.disposables)
-    }
-    private func completionMessage() -> AnyPublisher<String, Never> {
-        return self.servicePublisher
+        
+        self.servicePublisher
             .map { $0.result }
             .switchToLatest()
             .subscribe(on: DispatchQueue.global())
@@ -97,7 +93,12 @@ final class ContentViewModel: ObservableObject {
             }
         })
             .eraseToAnyPublisher()
+            .print()
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.display, on: self)
+            .store(in: &disposables)
     }
+    
     private func loadingIdicator() -> AnyPublisher<String, Never> {
         var dots = Constant.customContents([])
         return Timer.publish(every: 0.25, on: .main, in: .default)
