@@ -14,17 +14,14 @@ class UsernameHelper {
     private(set) var result: PassthroughSubject<Data, ServiceError> = PassthroughSubject<Data, ServiceError>()
     private var disposables = Set<AnyCancellable>()
     private var service: Service
-    
     init(request: CurrentValueSubject<String, Never>, service: Service = UserInfoService()) {
         self.request = request
         self.service = service
         self.setup()
     }
-    
     func reqeust(_ message: String) {
         request.send(message)
     }
-    
     func setup() {
         request
             .sink { (string) in

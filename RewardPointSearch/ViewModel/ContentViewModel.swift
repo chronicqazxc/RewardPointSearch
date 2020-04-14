@@ -36,13 +36,11 @@ final class ContentViewModel: ObservableObject {
     let servicePublisher = PassthroughSubject<UsernameHelper, ServiceError>()
     init(service: Service = UserInfoService()) {
         self.service = service
-        
         self.completionMessage()
             .print()
             .receive(on: DispatchQueue.main)
             .assign(to: \.display, on: self)
             .store(in: &disposables)
-        
         $username
             .debounce(for: 0.5, scheduler: DispatchQueue.global())
             .flatMap { (username) -> AnyPublisher<String, Never> in
@@ -69,7 +67,6 @@ final class ContentViewModel: ObservableObject {
                 self.disposableTimer = self.loadingIdicator()
                     .receive(on: DispatchQueue.main)
                     .assign(to: \.display, on: self)
-                
                 let usernameHelper = UsernameHelper(request: .init(message), service: self.service)
                 self.servicePublisher.send(usernameHelper)
                 DispatchQueue.global().asyncAfter(deadline: .now() + 1) {
@@ -79,7 +76,6 @@ final class ContentViewModel: ObservableObject {
         })
             .store(in: &self.disposables)
     }
-        
     private func completionMessage() -> AnyPublisher<String, Never> {
         return self.servicePublisher
             .map { $0.result }
